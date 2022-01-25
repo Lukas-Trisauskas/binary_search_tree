@@ -66,7 +66,7 @@ public:
     void printInOrder(node* ptr);
     int returnNode(int key, node* ptr);
     void returnData(int id, node* ptr);
-    void rotateLeft(int key, node* ptr);
+    //void rotateLeft(node* ptr);
 };
 BinarySearchTree::BinarySearchTree()
 {
@@ -110,6 +110,7 @@ void BinarySearchTree::insertNode(int key, node* ptr, transaction* data)
         {   //if left pointer of root node is not pointing to anything then,
             //make left of root node, point to a new node.
             ptr->left = createNode(key, data);
+            
         }
     }
     //same process as above, but for the right subtree.
@@ -201,7 +202,6 @@ void BinarySearchTree::returnData(int id, node* ptr)
     }
 };
 
-
 int main()
 {
     /*
@@ -220,20 +220,21 @@ int main()
 
     transaction* ptr = nullptr;
     std::vector<transaction*> history;
-    history.push_back(new transaction(5, "deposit", getDateTime(), 1500));
-    history.push_back(new transaction(1, "withdraw", getDateTime(), 100));
-    history.push_back(new transaction(6,"withdraw", getDateTime(), 50));
-    history.push_back(new transaction(2,"withdraw", getDateTime(), 200));
-    history.push_back(new transaction(9, "withdraw", getDateTime(), 150));
-    history.push_back(new transaction(20, "transfer", getDateTime(), 100));
-    history.push_back(new transaction(4, "deposit", getDateTime(), 100));
+    history.push_back(new transaction(1, "deposit", getDateTime(), 1500));
+    history.push_back(new transaction(2, "withdraw", getDateTime(), 100));
+    history.push_back(new transaction(3,"withdraw", getDateTime(), 50));
+    history.push_back(new transaction(4,"withdraw", getDateTime(), 200));
+    history.push_back(new transaction(5, "withdraw", getDateTime(), 150));
+    history.push_back(new transaction(6, "transfer", getDateTime(), 100));
+    history.push_back(new transaction(7, "deposit", getDateTime(), 100));
 
     BinarySearchTree myTree;
 
     for (int i = 0; i < history.size(); i++)
     {   
         myTree.insertNode(history[i]->transaction_id, myTree.root, history[i]);
+        
     }
-    myTree.returnData(4, myTree.root);
+    myTree.returnData(7, myTree.root);
 }
 

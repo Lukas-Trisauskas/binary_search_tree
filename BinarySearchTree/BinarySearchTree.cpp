@@ -1,97 +1,64 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <vector>
-#include <chrono>
-#include <time.h>
+#include <numeric>
 
-
-std::string getDateTime()
-{
-    time_t raw_time;
-    time(&raw_time);
-    return ctime(&raw_time);
-};
 struct transaction
 {
 public:
-    int transaction_id;
-    std::string desc;
+    int id;
+    const std::string desc;
     std::string timestamp;
     int value;
-    transaction(int id, std::string desc, std::string timestamp, int value);
-    ~transaction();
+    transaction(int id, std::string desc, std::string timestamp, int value) : id(id), desc(desc), timestamp(timestamp), value(value) {
+    };
+    ~transaction() {};
     void toString();
 };
-transaction::transaction(int id, std::string d, std::string t, int v)
-{
-    transaction_id = id;
-    desc = d;
-    timestamp = t;
-    value = v;
+std::string getDateTime() {
+    time_t raw_time;
+    time(&raw_time);
+    return ctime(&raw_time);
 }
-transaction::~transaction()
-{
-
-};
 void transaction::toString() 
 {
-    printf("--%s: %c%i on %s\n", desc.c_str(), char(156), value, timestamp.c_str());
+    printf("[%i] --%s: %c%i on %s\n", id, desc.c_str(), char(156), value, timestamp.c_str());
 }
 //node structure
-struct node
+struct Node
 {
     int key;
-    node* left;
-    node* right;
+    Node* left;
+    Node* right;
     transaction* data;
-    ~node();
+    ~Node() {};
+    Node(int key, transaction* data) : key(key), left(nullptr), right(nullptr), data(data) {};
 };
-node::~node()
-{
-    delete left;
-    delete right;
-    delete data;
-}
 class BinarySearchTree
 {
 public:
-    node* root;
-public:
-    BinarySearchTree();
-    ~BinarySearchTree() {
-        delete root;
-    }
-    node* createNode(int key, transaction* data);
-    void insertNode(int key, node* ptr, transaction* data);
-    void printInOrder(node* ptr);
-    int returnNode(int key, node* ptr);
-    void returnData(int id, node* ptr);
-    //void rotateLeft(node* ptr);
+    Node* root; 
+    BinarySearchTree() {
+        root = nullptr;
+    };
+    ~BinarySearchTree() {};
+    int returnNode(int id, Node* ptr);
+    void insertNode(int id, Node* ptr, transaction* data);
+    void build(std::vector<transaction*> history, BinarySearchTree tree);
+    void returnData(int value, Node* ptr);
+    void preOrderTraversal(Node* ptr);
+
+    
 };
-BinarySearchTree::BinarySearchTree()
-{
-    //make sure that the root doesn't point to anything at the start
-    root = NULL;
-}
-//function that creates and returns a new node (leaf)
-node* BinarySearchTree::createNode(int key, transaction* data)
-{
-    node* n = new node;
-    n->key = key;
-    n->left = NULL;
-    n->right = NULL;
-    n->data = data;
-    //note: it's called a leaf because it doesn't point to anything
-    return n;
-}
-void BinarySearchTree::insertNode(int key, node* ptr, transaction* data)
+/*
+void BinarySearchTree::insertNode(int key, node* ptr)
 {
     //check if the tree is empty
     if (root == NULL)
     {
         //if the tree is empty create a new node
         //make the root pointer point to that newly created node
-        root = createNode(key, data);
+        root = new node(key);
     }
     //if the root is pointing to a node then,
     //check if the key value that we want to add is less than,
@@ -104,12 +71,12 @@ void BinarySearchTree::insertNode(int key, node* ptr, transaction* data)
         {
             //if the left subtree is not empty, call the insertNode (recursively),
             //and traverse down the left subtree.
-            insertNode(key, ptr->left, data);
+            insertNode(key, ptr->left);
         }
         else
         {   //if left pointer of root node is not pointing to anything then,
             //make left of root node, point to a new node.
-            ptr->left = createNode(key, data);
+            ptr->left = new node(key);
             
         }
     }
@@ -118,11 +85,11 @@ void BinarySearchTree::insertNode(int key, node* ptr, transaction* data)
     {
         if (ptr->right != NULL)
         {
-            insertNode(key, ptr->right, data);
+            insertNode(key, ptr->right);
         }
         else
         {
-            ptr->right = createNode(key, data);
+            ptr->right = new node(key);
         }
     }
     //if the key is equal to the pointer key
@@ -130,28 +97,9 @@ void BinarySearchTree::insertNode(int key, node* ptr, transaction* data)
     {
         std::cout << "The key " << key << " has already been added to the tree\n";
     }
-}
-//recursively traverses the tree from lowest value to highest value
-void BinarySearchTree::printInOrder(node* ptr)
-{
-    if (root != NULL)
-    {
-        if (ptr->left != NULL)
-        {
-            printInOrder(ptr->left);
-        }
-        std::cout << ptr->key << " ";
-        if (ptr->right != NULL)
-        {
-            printInOrder(ptr->right);
-        }
-    }
-    else
-    {
-        std::cout << "The tree is empty\n";
-    }
-}
-int BinarySearchTree::returnNode(int key, node* ptr)
+};
+*/
+int BinarySearchTree::returnNode(int key, Node* ptr)
 {
     if (root != NULL)
     {
@@ -175,66 +123,139 @@ int BinarySearchTree::returnNode(int key, node* ptr)
     {
         return NULL;
     }
-}
-void BinarySearchTree::returnData(int id, node* ptr)
+};
+void BinarySearchTree::insertNode(int key, Node* ptr, transaction* data)
 {
-    if (root != NULL)
+    //check if the tree is empty
+    if (root == NULL)
     {
-        if (ptr->key == id)
+        //if the tree is empty create a new node
+        //make the root pointer point to that newly created node
+        root = new Node(key, data);
+    }
+    //if the root is pointing to a node then,
+    //check if the key value that we want to add is less than,
+    //the key value of the node pointed by the root.
+    else if (key < ptr->key)
+    {
+        //if the key value is less than the root node key value then,
+        //check if the left subtree is not empty.
+        if (ptr->left != NULL)
         {
-            return ptr->data->toString();
+            //if the left subtree is not empty, call the insertNode (recursively),
+            //and traverse down the left subtree.
+            insertNode(key, ptr->left, data);
+        }
+        else
+        {   //if left pointer of root node is not pointing to anything then,
+            //make left of root node, point to a new node.
+            ptr->left = new Node(key, data);
+
+        }
+    }
+    //same process as above, but for the right subtree.
+    else if (key > ptr->key)
+    {
+        if (ptr->right != NULL)
+        {
+            insertNode(key, ptr->right, data);
         }
         else
         {
-            if (id < ptr->key)
-            {
-                returnData(id, ptr->left);
-            }
-            else
-            {
-                returnData(id, ptr->right);
-            }
+            ptr->right = new Node(key, data);
         }
+    }
+    //if the key is equal to the pointer key
+    else
+    {
+        std::cout << "The key " << key << " has already been added to the tree\n";
+    }
+}
+void BinarySearchTree::returnData(int id, Node* ptr)
+{
+    if (ptr == NULL)
+    {
+        return;
     }
     else
     {
-        std::cout << "transaction not found\n";
+        if (ptr != NULL)
+        {
+            if (ptr->data->value == id)
+            {
+                ptr->data->toString();
+            }
+            else
+            {
+                if (id < ptr->data->value)
+                {
+                    return returnData(id, ptr->left);
+                }
+                else
+                {
+                    return returnData(id, ptr->right);
+                }
+            }
+        }
+        else
+        {
+            std::cout << "dsfsd";
+        }
     }
+    returnData(id, ptr->left);
+    returnData(id, ptr->right);
+};
+
+
+void BinarySearchTree::preOrderTraversal(Node* ptr)
+{
+    if (root == nullptr)
+    {
+        return;
+    }
+    std::cout << ptr->key << " ";
+    preOrderTraversal(ptr->left);
+    preOrderTraversal(ptr->right);
+};          
+int reorder(std::vector<transaction*>& keys, std::vector<int>& btree, int start, int end)
+{
+    //using divide an conquer method to obtain the median of value of the array and recursively repeat the process on a subvector
+    //to convert oredered vector to a bst.
+    if (start > end)
+        return NULL;
+    int mid = (start + end) / 2;
+    reorder(keys, btree, start, mid - 1);
+    reorder(keys, btree, mid + 1, end);
+    btree.push_back(keys[mid]->id);
+    return keys[mid]->id;
+};
+void build(std::vector<transaction*>& history, BinarySearchTree& tree)
+{
+    std::vector<int> btree; //balanced tree is stored here
+    reorder(history, btree, 0, history.size() - 1);
+
+    // solution to reverse iterate through a vector
+    std::vector<int>::reverse_iterator i;
+    for (i = btree.rbegin(); i < btree.rend(); i++)
+    {
+        //history.at(*i - 1)->toString();
+        tree.insertNode(*i, tree.root, history[*i - 1]);
+    }
+
 };
 
 int main()
-{
-    /*
-    int B[10] = { 20, 62, 48, 38, 5, 9, 94, 65, 12, 36 };
-    BinarySearchTree myTree;
-
-    for (auto i : B)
-    {
-        myTree.insertNode(i, myTree.root);
-    }
-    myTree.printInOrder(myTree.root);
-    std::cout << "\n";
-    int key = myTree.returnNode(20, myTree.root);
-    */
-
-
-    transaction* ptr = nullptr;
+{   
+    int key = 0;
     std::vector<transaction*> history;
-    history.push_back(new transaction(1, "deposit", getDateTime(), 1500));
-    history.push_back(new transaction(2, "withdraw", getDateTime(), 100));
-    history.push_back(new transaction(3,"withdraw", getDateTime(), 50));
-    history.push_back(new transaction(4,"withdraw", getDateTime(), 200));
-    history.push_back(new transaction(5, "withdraw", getDateTime(), 150));
-    history.push_back(new transaction(6, "transfer", getDateTime(), 100));
-    history.push_back(new transaction(7, "deposit", getDateTime(), 100));
-
-    BinarySearchTree myTree;
-
-    for (int i = 0; i < history.size(); i++)
-    {   
-        myTree.insertNode(history[i]->transaction_id, myTree.root, history[i]);
-        
-    }
-    myTree.returnData(7, myTree.root);
-}
-
+    history.push_back(new transaction(++key, "1withdraw", getDateTime(), 10));
+    history.push_back(new transaction(++key, "2withdraw", getDateTime(), 20));
+    history.push_back(new transaction(++key, "3deposit", getDateTime(), 30));
+    history.push_back(new transaction(++key, "4withdraw", getDateTime(), 40));
+    history.push_back(new transaction(++key, "5deposit", getDateTime(), 40));
+    history.push_back(new transaction(++key, "withdraw", getDateTime(), 40));
+    
+    BinarySearchTree tree;
+    build(history, tree);
+    tree.returnData(40, tree.root);
+};
